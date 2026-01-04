@@ -3,17 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vocabulary Quiz with Cached Definitions</title>
+<title>Advanced Vocabulary Quiz</title>
 <style>
-body { font-family: "Segoe UI", Arial, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin:0;}
-.quiz-container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.2); width:90%; max-width:700px; text-align:center;}
+body { font-family:"Segoe UI",Arial,sans-serif; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; transition:background 1s;}
+.quiz-container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.2); width:90%; max-width:700px; text-align:center; transition:all 1s;}
 .score { font-size:18px; margin-bottom:15px;}
 .question { font-size:22px; margin-bottom:20px;}
 .options button { padding:12px; border:2px solid #007bff; border-radius:8px; background:#fff; cursor:pointer; width:100%; margin:6px 0; font-size:18px; transition:.25s;}
 .options button:hover { background:#007bff; color:#fff;}
-.correct { background:#28a745 !important; color:#fff;}
-.wrong { background:#dc3545 !important; color:#fff;}
 .feedback { margin-top:15px; font-size:18px;}
+.new-word-form { margin-top:20px; display:flex; flex-direction:column; gap:10px; }
+.new-word-form input, .new-word-form button { padding:8px; font-size:16px; border-radius:6px; border:1px solid #ccc;}
+.new-word-form button { background:#28a745; color:#fff; border:none; cursor:pointer; transition:.3s;}
+.new-word-form button:hover { background:#218838; }
 </style>
 </head>
 <body>
@@ -23,132 +25,122 @@ body { font-family: "Segoe UI", Arial, sans-serif; background: #f0f4f8; display:
   <div class="question" id="question">Loading...</div>
   <div class="options" id="options"></div>
   <div class="feedback" id="feedback"></div>
+
+  <div class="new-word-form">
+    <input type="text" id="newWord" placeholder="Enter new word"/>
+    <input type="text" id="newDef" placeholder="Optional definition"/>
+    <button id="addWordBtn">Add Word</button>
+  </div>
 </div>
 
 <script>
-// Word list (words only; include all 293 words)
-const WORDS = [
-"Facetious","Deliberately","Unhurried","Flippant","Waggish","Patronizing",
-"Condescending","Superiority","Supercilious","Haughty","Disdain","Gregarious",
-"Misanthrope","Debacle","Ignominious","Fiasco","Debauchery","Pleasure","Enjoyment",
-"Gratification","Derivative","Banal","Originality","Novel","Creatively","Creativity",
-"Imaginative","Inventive","Mundane","Pragmatic","Feasible","Debilitate","Infirm",
-"Irresolute","Pedantic","Pretentious","Bravado","Intimidate","Overawe","Evocative",
-"Maelstrom","Turmoil","Inexorable","Persuade","Entreaty","Anathema","Vehemently",
-"Turpitude","Depravity","Wickedness","Rambunctious","Exuberant","Profuse","Boisterous",
-"Vitriol","Cruel","Permutation","Pompous","Affectedly","Irritatingly","Solemn",
-"Arrogant","Conceited","Vain","Excessive","Immoderate","Apprehensive","Fearful",
-"Fear","Anxiety","Unencumbered","Impediment","Hindrance","Propagate","Promulgate",
-"Proclamation","Double Entendre","Ambiguous","Euphemism","Anthropocentric","Accoutrements",
-"Adore","Respect","Deference","Worship","Venerate","Revere","Admire","Impress",
-"Affection","Affecting","Affected","Predilection","Precocious","Proclivities","Inclination",
-"Predisposition","Disposition","Menagerie","Captivity","Imprisoned","Secular","Agog",
-"Propensity","Behave","Adulterated","Coalesce","Sapiosexual","Emphatic","Forcibly",
-"Prominent","Protuberant","Diaspora","Dispersion","Disparity","Unfair","Esoteric",
-"Modicum","Rigorous","Enamored","Insidious","Treacherous","Cacophony","Discordant",
-"Quarrel","Hubris","Self-confidence","Opine","Lucrative","Precarious","Ubiquitous",
-"Permeate","Pervade","Original","Eccentric","Intelligible","Comprehensible","Ineffable",
-"Onus","Fragility","Endearment","Endearing","Cataclysmic","Emphasize","Prominence",
-"Protuberance","Protrudes","Vindictive","Amend","Sate","Desire","Cryptic","Obscure",
-"Dingy","Drab","Formidable","Impressively","Evoke","Elicit","Incapacitated","Deprived",
-"Depose","Nuanced","Conundrum","Prudent","Exacerbate","Exasperation","Poignant","Pungent",
-"Acrid","Fortuitous","Serendipitous","Inhibited","Redundant","Radical","Intrinsic",
-"Wholly","Intricate","Meticulous","Overt","Innocuous","Languid","Disinclination",
-"Enthusiasm","Jarring","Incongruous","Congruent","Coincide","Superimpose","Androgynous",
-"Indeterminate","Arbitrary","Autocratic","Domineering","Indiscriminate","Discriminate",
-"Distinction","Vacuous","Effervescent","Laborious","Fluency","Tumultuous","Disorderly",
-"Sophisticated","Sophistry","Fallacious","Mistaken","Deceive","Avant Garde","Befuddled",
-"Perplexed","Baffled","Bewilder","Complicate","Ethnocentric","Embellish","Putrid","Emit",
-"Fetid","Revulsion","Loathing","Disgust","Hatred","Repulsive","Distasteful","Aversion",
-"Putrefaction","Dubious","Hesitating","Tentative","Provisional","Reluctant","Doubt",
-"Conviction","Skeptical","Frugal","Begrudge","Envy","Discontented","Unwilling","Resentful",
-"Indignation","Cynical","Contemptuous","Scornful","Worthless","Despicable","Derisive",
-"Ridicule","Mockery","Absurd","Amusement","Illogical","Ineptitude","Hyperbole","Exaggerate",
-"Onomatopoeia","Love","Intuition","Conscious","Perceptible","Reasoning","Sensible","Rational",
-"Endow","Bequeath","Instinctive","Innate","Intuitive","Imbued","Inspire","Animate","Vigor",
-"Unconscious","Logical","Codification","Inference","Deductive","Explicit","Differ","Dissimilar",
-"Different","Usual","Habitual","Customary","Statute","Prefer","Distinct","Distinguishable",
-"Discernible","Perceive"
-];
-
-// Game state
+// Sample word bank
+let WORDS = ["Facetious","Deliberately","Unhurried","Flippant","Waggish","Patronizing"];
 let score = 0;
 
-// Local cache for definitions
-const definitionCache = JSON.parse(localStorage.getItem("definitionCache") || "{}");
+// Cached definitions
+let definitionCache = JSON.parse(localStorage.getItem("definitionCache")||"{}");
 
-// Utility: shuffle array
+// Background images
+const backgrounds = [
+  "https://source.unsplash.com/1600x900/?nature,sky",
+  "https://source.unsplash.com/1600x900/?books,library",
+  "https://source.unsplash.com/1600x900/?abstract,art",
+  "https://source.unsplash.com/1600x900/?technology,pattern"
+];
+
+// Utility functions
 function shuffle(arr){ return arr.sort(()=>Math.random()-0.5); }
 
-// Fetch definition with caching
-async function getDefinition(word) {
-    if(definitionCache[word]) return definitionCache[word];
-    try {
-        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-        const data = await res.json();
-        const def = data?.[0]?.meanings?.[0]?.definitions?.[0]?.definition || "Definition not found.";
-        definitionCache[word] = def;
-        localStorage.setItem("definitionCache", JSON.stringify(definitionCache));
-        return def;
-    } catch(e) {
-        return "Definition not found.";
-    }
+async function getDefinition(word){
+  if(definitionCache[word]) return definitionCache[word];
+  try{
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    const data = await res.json();
+    const def = data?.[0]?.meanings?.[0]?.definitions?.[0]?.definition || "Definition not found.";
+    definitionCache[word]=def;
+    localStorage.setItem("definitionCache",JSON.stringify(definitionCache));
+    return def;
+  }catch(e){ return "Definition not found."; }
 }
 
-// Generate a question
-async function generateQuestion() {
-    document.getElementById("feedback").innerText = "";
-    const word = WORDS[Math.floor(Math.random()*WORDS.length)];
-    const definition = await getDefinition(word);
-    const mode = Math.random()<0.5 ? "context":"definition";
-    let prompt, correct, choices;
+let questionCount = 0;
+async function generateQuestion(){
+  document.getElementById("feedback").innerText="";
+  const word = WORDS[Math.floor(Math.random()*WORDS.length)];
+  const definition = await getDefinition(word);
+  const mode = Math.random()<0.5 ? "context":"definition";
+  let prompt, correct, choices;
 
-    if(mode==="context"){
-        prompt = `Word: ${word}`;
-        correct = definition;
-        choices = shuffle([
-            correct,
-            await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)]),
-            await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)]),
-            await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)])
-        ]);
-    } else {
-        prompt = definition;
-        correct = word;
-        choices = shuffle([
-            correct,
-            WORDS[Math.floor(Math.random()*WORDS.length)],
-            WORDS[Math.floor(Math.random()*WORDS.length)],
-            WORDS[Math.floor(Math.random()*WORDS.length)]
-        ]);
-    }
+  if(mode==="context"){
+    prompt = `Word: ${word}`;
+    correct = definition;
+    choices = shuffle([
+      correct,
+      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)]),
+      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)]),
+      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)])
+    ]);
+  } else {
+    prompt = definition;
+    correct = word;
+    choices = shuffle([
+      correct,
+      WORDS[Math.floor(Math.random()*WORDS.length)],
+      WORDS[Math.floor(Math.random()*WORDS.length)],
+      WORDS[Math.floor(Math.random()*WORDS.length)]
+    ]);
+  }
 
-    document.getElementById("question").innerText = prompt;
-    const optsDiv = document.getElementById("options");
-    optsDiv.innerHTML = "";
-    choices.forEach(choice=>{
-        const btn = document.createElement("button");
-        btn.textContent = choice;
-        btn.onclick = ()=>checkAnswer(choice,correct);
-        optsDiv.appendChild(btn);
-    });
+  document.getElementById("question").innerText=prompt;
+  const optsDiv=document.getElementById("options");
+  optsDiv.innerHTML="";
+  choices.forEach(choice=>{
+    const btn=document.createElement("button");
+    btn.textContent=choice;
+    btn.onclick=()=>checkAnswer(choice,correct);
+    optsDiv.appendChild(btn);
+  });
+
+  questionCount++;
+  if(questionCount % 3 === 0) changeTheme();
 }
 
 function checkAnswer(choice, correct){
-    const feedback = document.getElementById("feedback");
-    if(choice===correct){
-        score++;
-        feedback.style.color="green";
-        feedback.innerText="Correct!";
-    } else {
-        feedback.style.color="red";
-        feedback.innerText=`Incorrect — correct: ${correct}`;
-    }
-    document.getElementById("score").innerText = `Score: ${score}`;
-    setTimeout(generateQuestion,1000);
+  const feedback = document.getElementById("feedback");
+  if(choice===correct){
+    score++;
+    feedback.style.color="green";
+    feedback.innerText="Correct!";
+  } else {
+    feedback.style.color="red";
+    feedback.innerText=`Incorrect — correct: ${correct}`;
+  }
+  document.getElementById("score").innerText=`Score: ${score}`;
+  setTimeout(generateQuestion,1000);
 }
 
-// Start
+// Add new word
+document.getElementById("addWordBtn").addEventListener("click", async ()=>{
+  const newWord=document.getElementById("newWord").value.trim();
+  let newDef=document.getElementById("newDef").value.trim();
+  if(!newWord) return alert("Enter a word");
+  if(!WORDS.includes(newWord)) WORDS.push(newWord);
+  if(!newDef) newDef = await getDefinition(newWord);
+  definitionCache[newWord]=newDef;
+  localStorage.setItem("definitionCache",JSON.stringify(definitionCache));
+  alert(`Word "${newWord}" added successfully!`);
+  document.getElementById("newWord").value="";
+  document.getElementById("newDef").value="";
+});
+
+// Change theme/background
+function changeTheme(){
+  document.body.style.backgroundImage=`url(${backgrounds[Math.floor(Math.random()*backgrounds.length)]})`;
+  document.body.style.backgroundSize="cover";
+  document.body.style.backgroundPosition="center";
+}
+
 generateQuestion();
 </script>
 </body>
