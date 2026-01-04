@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Animated Vocabulary Quiz</title>
+<title>Vocabulary Quiz</title>
 <style>
 body { font-family:"Segoe UI",Arial,sans-serif; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background-size:cover; background-position:center; transition: background 1s ease-in-out; }
-.quiz-container { background:#fff; padding:30px; border-radius:16px; box-shadow:0 10px 20px rgba(0,0,0,0.3); width:90%; max-width:700px; text-align:center; position:relative; overflow:hidden; transition: transform 0.5s ease, opacity 0.5s ease;}
-.quiz-container.animate-slide { transform: translateX(100%); opacity:0; }
+.quiz-container { background:#fff; padding:30px; border-radius:16px; box-shadow:0 10px 20px rgba(0,0,0,0.3); width:90%; max-width:700px; text-align:center; overflow:hidden;}
 .score { font-size:18px; margin-bottom:15px;}
-.question { font-size:22px; margin-bottom:20px; transition: transform 0.5s ease, opacity 0.5s ease; }
+.question { font-size:22px; margin-bottom:20px; }
 .options button { padding:12px; border:2px solid #007bff; border-radius:10px; background:#fff; cursor:pointer; width:100%; margin:6px 0; font-size:18px; transition:.25s;}
 .options button:hover { background:#007bff; color:#fff;}
 .feedback { margin-top:15px; font-size:18px; transition: opacity 0.5s ease;}
@@ -35,14 +34,49 @@ body { font-family:"Segoe UI",Arial,sans-serif; margin:0; display:flex; justify-
 </div>
 
 <script>
-// Word bank sample
-let WORDS = ["Facetious","Deliberately","Unhurried","Flippant","Waggish","Patronizing"];
-let score = 0;
+// Full Word Bank
+let WORDS = [
+"Facetious","Deliberately","Unhurried","Flippant","Waggish","Patronize","Condescend","Superiority",
+"Supercilious","Haughty","Disdain","Gregarious","Misanthrope","Debacle","Ignominious","Fiasco",
+"Debauchery","Pleasure","Enjoyment","Gratification","Derivative","Banal","Originality","Novel",
+"Creatively","Creativity","Imaginative","Inventiveness","Mundane","Pragmatic","Feasible",
+"Debilitate","Infirm","Irresolute","Pedant","Pretentious","Bravado","Intimidate","Overawe",
+"Evocative","Maelstrom","Turmoil","Inexorable","Persuade","Entreaty","Anathema","Vehemently",
+"Turpitude","Deprave","Wickedness","Rambunctious","Exuberant","Profuse","Boisterous","Vitriol",
+"Cruel","Permutation","Pompous","Affectedly","Irritatingly","Solemn","Arrogant","Conceited",
+"Vain","Excessive","Immoderate","Apprehensive","Fearful","Fear","Anxiety","Unencumbered",
+"Impediment","Hindrance","Propagate","Promulgate","Proclamation","Double Entendre","Ambiguous",
+"Euphemism","Anthropocentric","Accoutrements","Adore","Respect","Deference","Worship","Venerate",
+"Revere","Admire","Impress","Affection","Affecting","Affected","Predilection","Precocious",
+"Proclivities","Inclination","Predisposition","Disposition","Menagerie","Captivity","Imprison",
+"Secular","Agog","Propensity","Behave","Adulterated","Coalesce","Sapiosexual","Emphatic","Forcibly",
+"Prominent","Protuberant","Diaspora","Dispersion","Disparity","Unfair","Esoteric","Modicum",
+"Rigorous","Enamored","Insidious","Treacherous","Cacophony","Discordant","Quarrel","Hubris",
+"Self-confidence","Opine","Lucrative","Precarious","Ubiquitous","Permeate","Pervade","Original",
+"Eccentric","Intelligible","Comprehensible","Ineffable","Onus","Onus Probandi","Fragility","Endearment",
+"Endear","Cataclysmic","Emphasize","Prominence","Protuberance","Protrudes","Vindictive","Amend",
+"Sate","Desire","Cryptic","Obscure","Dingy","Drab","Formidable","Impressively","Evoke","Elicit",
+"Incapacitate","Deprive","Depose","Nuanced","Conundrum","Prudent","Exacerbate","Exasperate","Poignant",
+"Pungent","Acrid","Fortuitous","Serendipitous","Inhibited","Redundant","Radical","Intrinsic","Wholly",
+"Intricate","Meticulous","Overt","Innocuous","Languid","Disinclined","Enthusiasm","Jarring",
+"Incongruous","Congruous","Coincide","Superimpose","Androgynous","Indeterminate","Arbitrary",
+"Autocratic","Domineer","Indiscriminate","Discriminate","Distinction","Vacuous","Effervescent",
+"Laborious","Fluent","Tumultuous","Disorderly","Sophisticated","Sophistry","Fallacy","Mistake",
+"Deceive","Avant Garde","Befuddle","Perplexed","Baffled","Bewilder","Complicate","Ethnocentric",
+"Embellish","Putrid","Emit","Fetid","Revulsion","Loathe","Disgust","Hatred","Repulsive","Distaste",
+"Aversion","Putrefaction","Dubious","Hesitate","Tentative","Provisional","Reluctant","Doubting",
+"Conviction","Skeptical","Frugal","Begrudge","Envy","Discontented","Unwilling","Resent","Indignant",
+"Cynical","Contempt","Scorn","Worthless","Despicable","Derision","Ridicule","Mock","Absurd","Amuse",
+"Illogical","Inept","Hyperbole","Exaggerate","Onomatopoeia","Love","Intuition","Conscious",
+"Perceptible","Reason","Sensible","Rational","Endow","Bequeath","Instinct","Innate","Intuitive",
+"Imbued","Inspire","Animate","Vigor","Unconscious","Logic","Codification","Infer","Deduce","Explicit",
+"Differ","Dissimilar","Different","Usual","Habit","Customarily","Statute","Custumal","Prefer",
+"Distinct","Distinguishable","Discern","Perceive"
+]; 
 
-// Cached definitions
+let score = 0;
 let definitionCache = JSON.parse(localStorage.getItem("definitionCache")||"{}");
 
-// Unsplash backgrounds for theme cycling
 const backgrounds = [
   "https://source.unsplash.com/1600x900/?nature,sky",
   "https://source.unsplash.com/1600x900/?books,library",
@@ -54,10 +88,8 @@ const backgrounds = [
   "https://source.unsplash.com/1600x900/?forest",
 ];
 
-// Utility shuffle
 function shuffle(arr){ return arr.sort(()=>Math.random()-0.5); }
 
-// Fetch definition with caching
 async function getDefinition(word){
   if(definitionCache[word]) return definitionCache[word];
   try{
@@ -70,17 +102,6 @@ async function getDefinition(word){
   }catch(e){ return "Definition not found."; }
 }
 
-// Animate question card
-function animateCard(callback){
-  const card = document.getElementById("quizContainer");
-  card.classList.add("animate-slide");
-  setTimeout(()=>{
-    callback();
-    card.classList.remove("animate-slide");
-  }, 500);
-}
-
-// Change background smoothly
 function changeTheme(){
   const newBg = backgrounds[Math.floor(Math.random()*backgrounds.length)];
   const img = new Image();
@@ -88,12 +109,11 @@ function changeTheme(){
   img.onload = () => document.body.style.backgroundImage = `url(${newBg})`;
 }
 
-// Generate a random question
 async function generateQuestion(){
   document.getElementById("feedback").style.opacity = 0;
   const word = WORDS[Math.floor(Math.random()*WORDS.length)];
   const definition = await getDefinition(word);
-  const mode = Math.random()<0.5 ? "hidden" : "definition"; // hidden word or definition
+  const mode = Math.random()<0.5 ? "hidden" : "definition"; 
   let prompt, correct, choices;
 
   if(mode==="hidden"){
@@ -116,21 +136,19 @@ async function generateQuestion(){
     ]);
   }
 
-  animateCard(()=>{
-    document.getElementById("question").innerText = prompt;
-    const optsDiv = document.getElementById("options");
-    optsDiv.innerHTML = "";
-    choices.forEach(choice=>{
-      const btn = document.createElement("button");
-      btn.textContent = choice;
-      btn.onclick = ()=>checkAnswer(choice, correct);
-      optsDiv.appendChild(btn);
-    });
-    changeTheme();
+  document.getElementById("question").innerText = prompt;
+  const optsDiv = document.getElementById("options");
+  optsDiv.innerHTML = "";
+  choices.forEach(choice=>{
+    const btn = document.createElement("button");
+    btn.textContent = choice;
+    btn.onclick = ()=>checkAnswer(choice, correct);
+    optsDiv.appendChild(btn);
   });
+
+  changeTheme();
 }
 
-// Check answer
 function checkAnswer(choice, correct){
   const feedback = document.getElementById("feedback");
   if(choice===correct){
@@ -146,7 +164,6 @@ function checkAnswer(choice, correct){
   setTimeout(generateQuestion,1200);
 }
 
-// Add new word
 document.getElementById("addWordBtn").addEventListener("click", async ()=>{
   const newWord = document.getElementById("newWord").value.trim();
   let newDef = document.getElementById("newDef").value.trim();
@@ -160,7 +177,7 @@ document.getElementById("addWordBtn").addEventListener("click", async ()=>{
   document.getElementById("newDef").value="";
 });
 
-// Start the game
+// Start
 generateQuestion();
 </script>
 </body>
