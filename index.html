@@ -2,204 +2,195 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Vocabulary Master Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vocabulary Quiz Game</title>
 <style>
-body {
-  margin: 0;
-  font-family: "Segoe UI", Arial, sans-serif;
-  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-.card {
-  background: #fff;
-  width: 650px;
-  padding: 25px;
-  border-radius: 14px;
-  box-shadow: 0 20px 40px rgba(0,0,0,.35);
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-}
-.question {
-  margin: 20px 0;
-  font-size: 18px;
-}
-button {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  border-radius: 8px;
-  border: 2px solid #ddd;
-  background: #fff;
-  cursor: pointer;
-  transition: .25s;
-}
-button:hover { background: #1976d2; color: #fff; }
-.correct { background: #2e7d32 !important; color: #fff; }
-.wrong { background: #c62828 !important; color: #fff; }
-input {
-  width: 100%;
-  padding: 8px;
-  margin: 5px 0;
-}
-h3 { margin-top: 25px; }
+    body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: #f0f4f8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    .quiz-container {
+        background: #fff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        width: 90%;
+        max-width: 700px;
+        text-align: center;
+        position: relative;
+    }
+    .score {
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+    .question {
+        font-size: 22px;
+        margin-bottom: 20px;
+    }
+    .options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .option-btn {
+        padding: 12px;
+        border: 2px solid #007bff;
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+        transition: 0.3s;
+        font-size: 18px;
+    }
+    .option-btn:hover {
+        background: #007bff;
+        color: #fff;
+    }
+    .next-btn {
+        margin-top: 20px;
+        padding: 10px 20px;
+        font-size: 18px;
+        border: none;
+        border-radius: 8px;
+        background: #28a745;
+        color: #fff;
+        cursor: pointer;
+    }
+    .next-btn:hover {
+        background: #218838;
+    }
+    .mode-switch {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 16px;
+        cursor: pointer;
+        color: #007bff;
+        text-decoration: underline;
+    }
+    .feedback {
+        font-size: 20px;
+        margin-top: 10px;
+    }
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="header">
-    <div id="progress">Score: 0</div>
-    <div id="count">Questions: 0</div>
-  </div>
-
-  <div id="question" class="question"></div>
-  <div id="choices"></div>
-
-  <h3>Add New Word (Optional)</h3>
-  <input id="newWord" placeholder="Word">
-  <input id="newDef" placeholder="Definition">
-  <input id="newSentence" placeholder="Sentence using [HIDDEN WORD]">
-  <button onclick="addWord()">Add Word</button>
+<div class="quiz-container">
+    <div class="mode-switch" id="modeSwitch">Switch Mode</div>
+    <div class="score" id="score">Score: 0</div>
+    <div class="question" id="question"></div>
+    <div class="options" id="options"></div>
+    <button class="next-btn" id="nextBtn" style="display:none;">Next Question</button>
+    <div class="feedback" id="feedback"></div>
 </div>
 
 <script>
-/* ================= WORD BANK ==================== */
-let WORD_BANK = [];
-
-// All 293 words auto-generated
-const RAW_WORDS = [
-"Facetious","Deliberately","Unhurried","Flippant","Waggish","Patronizing",
-"Condescending","Superiority","Supercilious","Haughty","Disdain","Gregarious",
-"Misanthrope","Debacle","Ignominious","Fiasco","Debauchery","Pleasure","Enjoyment",
-"Gratification","Derivative","Banal","Originality","Novel","Creatively","Creativity",
-"Imaginative","Inventive","Mundane","Pragmatic","Feasible","Debilitate","Infirm",
-"Irresolute","Pedantic","Pretentious","Bravado","Intimidate","Overawe","Evocative",
-"Maelstrom","Turmoil","Inexorable","Persuade","Entreaty","Anathema","Vehemently",
-"Turpitude","Depravity","Wickedness","Rambunctious","Exuberant","Profuse","Boisterous",
-"Vitriol","Cruel","Permutation","Pompous","Affectedly","Irritatingly","Solemn",
-"Arrogant","Conceited","Vain","Excessive","Immoderate","Apprehensive","Fearful",
-"Fear","Anxiety","Unencumbered","Impediment","Hindrance","Propagate","Promulgate",
-"Proclamation","Double Entendre","Ambiguous","Euphemism","Anthropocentric",
-"Accoutrements","Adore","Respect","Deference","Worship","Venerate","Revere",
-"Admire","Impress","Affection","Affecting","Affected","Predilection","Precocious",
-"Proclivities","Inclination","Predisposition","Disposition","Menagerie","Captivity",
-"Imprisoned","Secular","Agog","Propensity","Behave","Adulterated","Coalesce",
-"Sapiosexual","Emphatic","Forcibly","Prominent","Protuberant","Diaspora","Dispersion",
-"Disparity","Unfair","Esoteric","Modicum","Rigorous","Enamored","Insidious",
-"Treacherous","Cacophony","Discordant","Quarrel","Hubris","Self-confidence","Opine",
-"Lucrative","Precarious","Ubiquitous","Permeate","Pervade","Original","Eccentric",
-"Intelligible","Comprehensible","Ineffable","Onus","Fragility","Endearment",
-"Endearing","Cataclysmic","Emphasize","Vindictive","Amend","Satiated","Desire",
-"Cryptic","Obscure","Dingy","Drab","Formidable","Impressively","Evoke","Elicit",
-"Incapacitated","Deprived","Depose","Nuanced","Conundrum","Prudent","Exacerbate",
-"Exasperation","Poignant","Pungent","Acrid","Fortuitous","Serendipitous","Inhibited",
-"Redundant","Radical","Intrinsic","Wholly","Intricate","Meticulous","Overt",
-"Innocuous","Languid","Disinclination","Enthusiasm","Jarring","Incongruous",
-"Congruent","Coincide","Superimpose","Androgynous","Indeterminate","Arbitrary",
-"Autocratic","Domineering","Indiscriminate","Discriminate","Distinction","Vacuous",
-"Effervescent","Laborious","Fluency","Tumultuous","Disorderly","Sophisticated",
-"Sophistry","Fallacious","Mistaken","Deceive","Avant Garde","Befuddled","Perplexed",
-"Baffled","Bewilder","Complicate","Ethnocentric","Embellish","Putrid","Emit","Fetid",
-"Revulsion","Loathing","Disgust","Hatred","Repulsive","Distasteful","Aversion",
-"Putrefaction","Dubious","Hesitating","Tentative","Provisional","Reluctant","Doubt",
-"Conviction","Skeptical","Frugal","Begrudge","Envy","Discontented","Unwilling",
-"Resentful","Indignation","Cynical","Contemptuous","Scornful","Worthless",
-"Despicable","Derisive","Ridicule","Mockery","Absurd","Amusement","Illogical",
-"Ineptitude","Hyperbole","Exaggerate","Onomatopoeia","Love","Intuition","Conscious",
-"Perceptible","Reasoning","Sensible","Rational","Endow","Bequeath","Instinctive",
-"Innate","Intuitive","Imbued","Inspire","Animate","Vigor","Unconscious","Logical",
-"Inference","Deductive","Explicit","Differ","Dissimilar","Different","Unusual",
-"Habitual","Customary","Statute","Prefer","Distinct","Distinguishable",
-"Discernible","Perceive"
+// Full word bank (sample subset, paste all 293 objects here)
+const WORD_BANK = [
+    // Part 1–6 objects go here
+    // Example:
+    {
+        word: "Facetious",
+        definition: "Treating serious issues with deliberately inappropriate humor.",
+        sentence: "His [HIDDEN WORD] comment made everyone laugh."
+    },
+    {
+        word: "Deliberately",
+        definition: "Done consciously and intentionally.",
+        sentence: "She [HIDDEN WORD] ignored the warning signs."
+    },
+    {
+        word: "Unhurried",
+        definition: "Acting or done at leisure; without haste.",
+        sentence: "He took an [HIDDEN WORD] stroll through the park."
+    }
+    // ...paste all remaining 290 objects here
 ];
 
-// Auto-generate definitions + sentences
-RAW_WORDS.forEach(w=>{
-  WORD_BANK.push({
-    word: w,
-    definition: `The standard meaning of "${w}".`,
-    sentence: `This sentence uses [HIDDEN WORD] in context.`
-  });
+let score = 0;
+let currentQuestion = {};
+let mode = "context"; // context or definition
+
+const scoreEl = document.getElementById("score");
+const questionEl = document.getElementById("question");
+const optionsEl = document.getElementById("options");
+const feedbackEl = document.getElementById("feedback");
+const nextBtn = document.getElementById("nextBtn");
+const modeSwitch = document.getElementById("modeSwitch");
+
+function getRandomInt(max) {
+    return Math.floor(Math.random() * max);
+}
+
+function shuffle(array) {
+    for (let i = array.length -1; i >0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function generateQuestion() {
+    feedbackEl.textContent = "";
+    nextBtn.style.display = "none";
+
+    // Pick random word
+    currentQuestion = WORD_BANK[getRandomInt(WORD_BANK.length)];
+
+    let choices = [currentQuestion.definition];
+    // Add 3 distractors
+    while (choices.length < 4) {
+        const distractor = WORD_BANK[getRandomInt(WORD_BANK.length)].definition;
+        if (!choices.includes(distractor)) choices.push(distractor);
+    }
+
+    choices = shuffle(choices);
+
+    if (mode === "context") {
+        questionEl.textContent = currentQuestion.sentence.replace("[HIDDEN WORD]", "______");
+    } else {
+        questionEl.textContent = currentQuestion.word;
+    }
+
+    optionsEl.innerHTML = "";
+    choices.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.textContent = choice;
+        btn.className = "option-btn";
+        btn.onclick = () => checkAnswer(choice);
+        optionsEl.appendChild(btn);
+    });
+}
+
+function checkAnswer(choice) {
+    const correctDef = currentQuestion.definition;
+    if ((mode === "context" && choice === correctDef) || (mode === "definition" && choice === correctDef)) {
+        feedbackEl.textContent = "Correct!";
+        feedbackEl.style.color = "green";
+        score++;
+        scoreEl.textContent = `Score: ${score}`;
+    } else {
+        feedbackEl.textContent = `Incorrect! Correct: ${correctDef}`;
+        feedbackEl.style.color = "red";
+    }
+    nextBtn.style.display = "block";
+    Array.from(optionsEl.children).forEach(btn => btn.disabled = true);
+}
+
+nextBtn.addEventListener("click", generateQuestion);
+
+modeSwitch.addEventListener("click", () => {
+    mode = mode === "context" ? "definition" : "context";
+    modeSwitch.textContent = mode === "context" ? "Switch Mode" : "Switch Mode";
+    generateQuestion();
 });
 
-// Load saved custom words from previous sessions
-const saved = localStorage.getItem("customWords");
-if(saved){ WORD_BANK.push(...JSON.parse(saved)); }
-
-/* ================= GAME ENGINE ================= */
-let score=0, count=0;
-
-function shuffle(a){ return a.sort(()=>Math.random()-.5); }
-
-function getDistractors(correct, key){
-  return shuffle(
-    WORD_BANK.filter(w=>w[key]!==correct).map(w=>w[key])
-  ).slice(0,3);
-}
-
-function loadQuestion(){
-  const q = WORD_BANK[Math.floor(Math.random()*WORD_BANK.length)];
-  const mode = Math.floor(Math.random()*3);
-
-  let prompt, correct, answers;
-
-  if(mode===0){
-    prompt = q.sentence;
-    correct = q.definition;
-    answers = shuffle([correct, ...getDistractors(correct,"definition")]);
-  } else if(mode===1){
-    prompt = `What does "${q.word}" mean?`;
-    correct = q.definition;
-    answers = shuffle([correct, ...getDistractors(correct,"definition")]);
-  } else {
-    prompt = q.definition;
-    correct = q.word;
-    answers = shuffle([correct, ...getDistractors(correct,"word")]);
-  }
-
-  document.getElementById("question").innerText = prompt;
-  document.getElementById("progress").innerText = `Score: ${score}`;
-  document.getElementById("count").innerText = `Questions: ${count}`;
-
-  const box = document.getElementById("choices");
-  box.innerHTML = "";
-
-  answers.forEach(a=>{
-    const b=document.createElement("button");
-    b.innerText=a;
-    b.onclick=()=>check(b,a===correct);
-    box.appendChild(b);
-  });
-}
-
-function check(btn, ok){
-  document.querySelectorAll("button").forEach(b=>b.disabled=true);
-  if(ok){ btn.classList.add("correct"); score++; }
-  else btn.classList.add("wrong");
-  count++;
-  setTimeout(loadQuestion,800);
-}
-
-function addWord(){
-  const w=document.getElementById("newWord").value.trim();
-  const d=document.getElementById("newDef").value.trim();
-  const s=document.getElementById("newSentence").value.trim();
-  if(!w||!d||!s){ return alert("Fill all fields"); }
-  WORD_BANK.push({word:w, definition:d, sentence:s});
-  localStorage.setItem("customWords", JSON.stringify(WORD_BANK));
-  alert("Word added!");
-  document.getElementById("newWord").value="";
-  document.getElementById("newDef").value="";
-  document.getElementById("newSentence").value="";
-}
-
 // Start first question
-loadQuestion();
+generateQuestion();
 </script>
 </body>
 </html>
