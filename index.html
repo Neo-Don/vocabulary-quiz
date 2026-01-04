@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Vocabulary Master Quiz</title>
-
 <style>
 body {
   margin: 0;
@@ -12,11 +11,11 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
 }
 .card {
   background: #fff;
-  width: 600px;
+  width: 650px;
   padding: 25px;
   border-radius: 14px;
   box-shadow: 0 20px 40px rgba(0,0,0,.35);
@@ -48,11 +47,10 @@ input {
   padding: 8px;
   margin: 5px 0;
 }
+h3 { margin-top: 25px; }
 </style>
 </head>
-
 <body>
-
 <div class="card">
   <div class="header">
     <div id="progress">Score: 0</div>
@@ -62,8 +60,6 @@ input {
   <div id="question" class="question"></div>
   <div id="choices"></div>
 
-  <hr>
-
   <h3>Add New Word (Optional)</h3>
   <input id="newWord" placeholder="Word">
   <input id="newDef" placeholder="Definition">
@@ -72,17 +68,10 @@ input {
 </div>
 
 <script>
-/* ==================================================
-   WORD BANK — THIS IS WHERE YOUR 293 WORDS LIVE
-   ================================================== */
-
+/* ================= WORD BANK ==================== */
 let WORD_BANK = [];
 
-/* ==================================================
-   AUTO-GENERATE ALL 293 WORDS
-   (This avoids massive copy-paste errors)
-   ================================================== */
-
+// All 293 words auto-generated
 const RAW_WORDS = [
 "Facetious","Deliberately","Unhurried","Flippant","Waggish","Patronizing",
 "Condescending","Superiority","Supercilious","Haughty","Disdain","Gregarious",
@@ -129,6 +118,7 @@ const RAW_WORDS = [
 "Discernible","Perceive"
 ];
 
+// Auto-generate definitions + sentences
 RAW_WORDS.forEach(w=>{
   WORD_BANK.push({
     word: w,
@@ -137,13 +127,12 @@ RAW_WORDS.forEach(w=>{
   });
 });
 
-/* ==================================================
-   GAME ENGINE — DO NOT EDIT
-   ================================================== */
+// Load saved custom words from previous sessions
+const saved = localStorage.getItem("customWords");
+if(saved){ WORD_BANK.push(...JSON.parse(saved)); }
 
-let score = 0;
-let count = 0;
-let QUESTIONS = shuffle([...WORD_BANK]);
+/* ================= GAME ENGINE ================= */
+let score=0, count=0;
 
 function shuffle(a){ return a.sort(()=>Math.random()-.5); }
 
@@ -154,9 +143,7 @@ function getDistractors(correct, key){
 }
 
 function loadQuestion(){
-  if(QUESTIONS.length === 0) QUESTIONS = shuffle([...WORD_BANK]);
-
-  const q = QUESTIONS.pop();
+  const q = WORD_BANK[Math.floor(Math.random()*WORD_BANK.length)];
   const mode = Math.floor(Math.random()*3);
 
   let prompt, correct, answers;
@@ -199,14 +186,19 @@ function check(btn, ok){
 }
 
 function addWord(){
-  WORD_BANK.push({
-    word:newWord.value,
-    definition:newDef.value,
-    sentence:newSentence.value
-  });
+  const w=document.getElementById("newWord").value.trim();
+  const d=document.getElementById("newDef").value.trim();
+  const s=document.getElementById("newSentence").value.trim();
+  if(!w||!d||!s){ return alert("Fill all fields"); }
+  WORD_BANK.push({word:w, definition:d, sentence:s});
+  localStorage.setItem("customWords", JSON.stringify(WORD_BANK));
   alert("Word added!");
+  document.getElementById("newWord").value="";
+  document.getElementById("newDef").value="";
+  document.getElementById("newSentence").value="";
 }
 
+// Start first question
 loadQuestion();
 </script>
 </body>
