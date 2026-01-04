@@ -7,6 +7,9 @@
 <style>
 body { font-family:"Segoe UI",Arial,sans-serif; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background-size:cover; background-position:center; transition: background 1s ease-in-out; }
 .quiz-container { background:#fff; padding:30px; border-radius:16px; box-shadow:0 10px 20px rgba(0,0,0,0.3); width:90%; max-width:700px; text-align:center; overflow:hidden;}
+.mode-select { margin-bottom:20px; }
+.mode-select button { padding:10px 15px; margin:0 5px; border:none; border-radius:8px; cursor:pointer; background:#007bff; color:#fff; transition:.3s;}
+.mode-select button:hover { background:#0056b3;}
 .score { font-size:18px; margin-bottom:15px;}
 .question { font-size:22px; margin-bottom:20px; }
 .options button { padding:12px; border:2px solid #007bff; border-radius:10px; background:#fff; cursor:pointer; width:100%; margin:6px 0; font-size:18px; transition:.25s;}
@@ -21,6 +24,11 @@ body { font-family:"Segoe UI",Arial,sans-serif; margin:0; display:flex; justify-
 <body>
 
 <div class="quiz-container" id="quizContainer">
+  <div class="mode-select">
+    <button onclick="setMode('hidden')">Hidden Word</button>
+    <button onclick="setMode('defToWord')">Definition → Word</button>
+    <button onclick="setMode('wordToDef')">Word → Definition</button>
+  </div>
   <div class="score" id="score">Score: 0</div>
   <div class="question" id="question">Loading...</div>
   <div class="options" id="options"></div>
@@ -72,11 +80,11 @@ let WORDS = [
 "Imbued","Inspire","Animate","Vigor","Unconscious","Logic","Codification","Infer","Deduce","Explicit",
 "Differ","Dissimilar","Different","Usual","Habit","Customarily","Statute","Custumal","Prefer",
 "Distinct","Distinguishable","Discern","Perceive"
-]; 
+];
 
 let score = 0;
+let currentMode = "hidden"; // default mode
 let definitionCache = JSON.parse(localStorage.getItem("definitionCache")||"{}");
-
 const backgrounds = [
   "https://source.unsplash.com/1600x900/?nature,sky",
   "https://source.unsplash.com/1600x900/?books,library",
@@ -87,6 +95,11 @@ const backgrounds = [
   "https://source.unsplash.com/1600x900/?city,night",
   "https://source.unsplash.com/1600x900/?forest",
 ];
+
+function setMode(mode){
+  currentMode = mode;
+  generateQuestion();
+}
 
 function shuffle(arr){ return arr.sort(()=>Math.random()-0.5); }
 
@@ -113,10 +126,9 @@ async function generateQuestion(){
   document.getElementById("feedback").style.opacity = 0;
   const word = WORDS[Math.floor(Math.random()*WORDS.length)];
   const definition = await getDefinition(word);
-  const mode = Math.random()<0.5 ? "hidden" : "definition"; 
   let prompt, correct, choices;
 
-  if(mode==="hidden"){
+  if(currentMode==="hidden"){
     prompt = `[HIDDEN WORD] in a sentence: ${definition}`;
     correct = word;
     choices = shuffle([
@@ -125,7 +137,7 @@ async function generateQuestion(){
       WORDS[Math.floor(Math.random()*WORDS.length)],
       WORDS[Math.floor(Math.random()*WORDS.length)]
     ]);
-  } else {
+  } else if(currentMode==="defToWord"){
     prompt = definition;
     correct = word;
     choices = shuffle([
@@ -133,6 +145,15 @@ async function generateQuestion(){
       WORDS[Math.floor(Math.random()*WORDS.length)],
       WORDS[Math.floor(Math.random()*WORDS.length)],
       WORDS[Math.floor(Math.random()*WORDS.length)]
+    ]);
+  } else { // wordToDef
+    prompt = word;
+    correct = definition;
+    choices = shuffle([
+      correct,
+      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)]),
+      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)]),
+      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)])
     ]);
   }
 
@@ -164,6 +185,7 @@ function checkAnswer(choice, correct){
   setTimeout(generateQuestion,1200);
 }
 
+// Add new word
 document.getElementById("addWordBtn").addEventListener("click", async ()=>{
   const newWord = document.getElementById("newWord").value.trim();
   let newDef = document.getElementById("newDef").value.trim();
