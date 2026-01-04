@@ -3,15 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Advanced Vocabulary Quiz</title>
+<title>Animated Vocabulary Quiz</title>
 <style>
-body { font-family:"Segoe UI",Arial,sans-serif; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background-size:cover; background-position:center; transition:background 1s ease-in-out;}
-.quiz-container { background:#fff; padding:30px; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.2); width:90%; max-width:700px; text-align:center; transition:all 1s;}
+body { font-family:"Segoe UI",Arial,sans-serif; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background-size:cover; background-position:center; transition: background 1s ease-in-out; }
+.quiz-container { background:#fff; padding:30px; border-radius:16px; box-shadow:0 10px 20px rgba(0,0,0,0.3); width:90%; max-width:700px; text-align:center; position:relative; overflow:hidden; transition: transform 0.5s ease, opacity 0.5s ease;}
+.quiz-container.animate-slide { transform: translateX(100%); opacity:0; }
 .score { font-size:18px; margin-bottom:15px;}
-.question { font-size:22px; margin-bottom:20px;}
-.options button { padding:12px; border:2px solid #007bff; border-radius:8px; background:#fff; cursor:pointer; width:100%; margin:6px 0; font-size:18px; transition:.25s;}
+.question { font-size:22px; margin-bottom:20px; transition: transform 0.5s ease, opacity 0.5s ease; }
+.options button { padding:12px; border:2px solid #007bff; border-radius:10px; background:#fff; cursor:pointer; width:100%; margin:6px 0; font-size:18px; transition:.25s;}
 .options button:hover { background:#007bff; color:#fff;}
-.feedback { margin-top:15px; font-size:18px;}
+.feedback { margin-top:15px; font-size:18px; transition: opacity 0.5s ease;}
 .new-word-form { margin-top:20px; display:flex; flex-direction:column; gap:10px; }
 .new-word-form input, .new-word-form button { padding:8px; font-size:16px; border-radius:6px; border:1px solid #ccc;}
 .new-word-form button { background:#28a745; color:#fff; border:none; cursor:pointer; transition:.3s;}
@@ -20,11 +21,10 @@ body { font-family:"Segoe UI",Arial,sans-serif; margin:0; display:flex; justify-
 </head>
 <body>
 
-<div class="quiz-container">
+<div class="quiz-container" id="quizContainer">
   <div class="score" id="score">Score: 0</div>
   <div class="question" id="question">Loading...</div>
   <div class="options" id="options"></div>
-
   <div class="feedback" id="feedback"></div>
 
   <div class="new-word-form">
@@ -35,20 +35,23 @@ body { font-family:"Segoe UI",Arial,sans-serif; margin:0; display:flex; justify-
 </div>
 
 <script>
-// Word bank sample (replace or expand)
+// Word bank sample
 let WORDS = ["Facetious","Deliberately","Unhurried","Flippant","Waggish","Patronizing"];
 let score = 0;
 
-// Cache definitions
+// Cached definitions
 let definitionCache = JSON.parse(localStorage.getItem("definitionCache")||"{}");
 
-// Background images
+// Unsplash backgrounds for theme cycling
 const backgrounds = [
   "https://source.unsplash.com/1600x900/?nature,sky",
   "https://source.unsplash.com/1600x900/?books,library",
   "https://source.unsplash.com/1600x900/?abstract,art",
   "https://source.unsplash.com/1600x900/?technology,pattern",
-  "https://source.unsplash.com/1600x900/?space,stars"
+  "https://source.unsplash.com/1600x900/?space,stars",
+  "https://source.unsplash.com/1600x900/?ocean",
+  "https://source.unsplash.com/1600x900/?city,night",
+  "https://source.unsplash.com/1600x900/?forest",
 ];
 
 // Utility shuffle
@@ -62,9 +65,19 @@ async function getDefinition(word){
     const data = await res.json();
     const def = data?.[0]?.meanings?.[0]?.definitions?.[0]?.definition || "Definition not found.";
     definitionCache[word]=def;
-    localStorage.setItem("definitionCache",JSON.stringify(definitionCache));
+    localStorage.setItem("definitionCache", JSON.stringify(definitionCache));
     return def;
   }catch(e){ return "Definition not found."; }
+}
+
+// Animate question card
+function animateCard(callback){
+  const card = document.getElementById("quizContainer");
+  card.classList.add("animate-slide");
+  setTimeout(()=>{
+    callback();
+    card.classList.remove("animate-slide");
+  }, 500);
 }
 
 // Change background smoothly
@@ -72,27 +85,25 @@ function changeTheme(){
   const newBg = backgrounds[Math.floor(Math.random()*backgrounds.length)];
   const img = new Image();
   img.src = newBg;
-  img.onload = () => {
-    document.body.style.backgroundImage = `url(${newBg})`;
-  };
+  img.onload = () => document.body.style.backgroundImage = `url(${newBg})`;
 }
 
-// Generate a new random question
+// Generate a random question
 async function generateQuestion(){
-  document.getElementById("feedback").innerText="";
+  document.getElementById("feedback").style.opacity = 0;
   const word = WORDS[Math.floor(Math.random()*WORDS.length)];
   const definition = await getDefinition(word);
-  const mode = Math.random()<0.5 ? "context":"definition";
+  const mode = Math.random()<0.5 ? "hidden" : "definition"; // hidden word or definition
   let prompt, correct, choices;
 
-  if(mode==="context"){
-    prompt = `Word: ${word}`;
-    correct = definition;
+  if(mode==="hidden"){
+    prompt = `[HIDDEN WORD] in a sentence: ${definition}`;
+    correct = word;
     choices = shuffle([
       correct,
-      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)]),
-      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)]),
-      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)])
+      WORDS[Math.floor(Math.random()*WORDS.length)],
+      WORDS[Math.floor(Math.random()*WORDS.length)],
+      WORDS[Math.floor(Math.random()*WORDS.length)]
     ]);
   } else {
     prompt = definition;
@@ -105,17 +116,18 @@ async function generateQuestion(){
     ]);
   }
 
-  document.getElementById("question").innerText = prompt;
-  const optsDiv = document.getElementById("options");
-  optsDiv.innerHTML = "";
-  choices.forEach(choice=>{
-    const btn = document.createElement("button");
-    btn.textContent = choice;
-    btn.onclick = ()=>checkAnswer(choice, correct);
-    optsDiv.appendChild(btn);
+  animateCard(()=>{
+    document.getElementById("question").innerText = prompt;
+    const optsDiv = document.getElementById("options");
+    optsDiv.innerHTML = "";
+    choices.forEach(choice=>{
+      const btn = document.createElement("button");
+      btn.textContent = choice;
+      btn.onclick = ()=>checkAnswer(choice, correct);
+      optsDiv.appendChild(btn);
+    });
+    changeTheme();
   });
-
-  changeTheme(); // Change background every question
 }
 
 // Check answer
@@ -129,18 +141,19 @@ function checkAnswer(choice, correct){
     feedback.style.color="red";
     feedback.innerText=`Incorrect — correct: ${correct}`;
   }
+  feedback.style.opacity = 1;
   document.getElementById("score").innerText=`Score: ${score}`;
-  setTimeout(generateQuestion,1000);
+  setTimeout(generateQuestion,1200);
 }
 
-// Add new word UI
+// Add new word
 document.getElementById("addWordBtn").addEventListener("click", async ()=>{
   const newWord = document.getElementById("newWord").value.trim();
   let newDef = document.getElementById("newDef").value.trim();
   if(!newWord) return alert("Enter a word");
   if(!WORDS.includes(newWord)) WORDS.push(newWord);
   if(!newDef) newDef = await getDefinition(newWord);
-  definitionCache[newWord] = newDef;
+  definitionCache[newWord]=newDef;
   localStorage.setItem("definitionCache", JSON.stringify(definitionCache));
   alert(`Word "${newWord}" added successfully!`);
   document.getElementById("newWord").value="";
