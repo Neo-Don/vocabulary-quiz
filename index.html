@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vocabulary Master Quiz</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.card {
+  background: #fff;
+  width: 560px;
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.35);
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.question {
+  margin: 20px 0;
+  font-size: 18px;
+}
+button {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  transition: .25s;
+}
+button:hover { background: #1976d2; color: #fff; }
+.correct { background: #2e7d32 !important; color: #fff; }
+.wrong { background: #c62828 !important; color: #fff; }
+</style>
+</head>
+
+<body>
+<div class="card">
+  <div class="header">
+    <div id="progress"></div>
+    <div id="score"></div>
+  </div>
+  <div id="question" class="question"></div>
+  <div id="choices"></div>
+</div>
+
+<script>
+/* =========================
+   WORD BANK (EDIT HERE)
+   ========================= */
+
+const WORD_BANK = [
+  {
+    word: "Facetious",
+    definition: "Treating serious matters with deliberately inappropriate humor",
+    sentence: "His [HIDDEN WORD] comment offended the audience."
+  },
+  {
+    word: "Deliberately",
+    definition: "Done on purpose and with careful intention",
+    sentence: "She [HIDDEN WORD] ignored the warning."
+  },
+  {
+    word: "Unhurried",
+    definition: "Relaxed and without haste",
+    sentence: "He spoke in an [HIDDEN WORD] manner."
+  }
+  // 🔽 PASTE THE REST OF YOUR 293 WORDS HERE (same format)
+];
+
+/* =========================
+   GAME ENGINE
+   ========================= */
+
+let score = 0;
+let index = 0;
+const TOTAL = WORD_BANK.length;
+
+function shuffle(a){ return a.sort(()=>Math.random()-.5); }
+
+const QUESTIONS = shuffle([...WORD_BANK]);
+
+function getDistractors(correct, type){
+  return shuffle(
+    WORD_BANK.filter(w => w[type] !== correct)
+             .map(w => w[type])
+  ).slice(0,3);
+}
+
+function loadQuestion(){
+  if(index >= QUESTIONS.length){
+    document.getElementById("question").innerHTML =
+      `<strong>Finished!</strong><br>Score: ${score}/${TOTAL}`;
+    document.getElementById("choices").innerHTML = "";
+    return;
+  }
+
+  const q = QUESTIONS[index];
+  const mode = Math.floor(Math.random()*3); // 0,1,2
+
+  let prompt, answers, correct;
+
+  if(mode === 0){
+    // Context → Definition
+    prompt = q.sentence;
+    correct = q.definition;
+    answers = shuffle([correct, ...getDistractors(correct,"definition")]);
+  }
+  else if(mode === 1){
+    // Word → Definition
+    prompt = `What does "${q.word}" mean?`;
+    correct = q.definition;
+    answers = shuffle([correct, ...getDistractors(correct,"definition")]);
+  }
+  else{
+    // Definition → Word (NEW)
+    prompt = q.definition;
+    correct = q.word;
+    answers = shuffle([correct, ...getDistractors(correct,"word")]);
+  }
+
+  document.getElementById("question").innerText = prompt;
+  document.getElementById("progress").innerText =
+    `Question ${index+1} / ${TOTAL}`;
+  document.getElementById("score").innerText = `Score: ${score}`;
+
+  const box = document.getElementById("choices");
+  box.innerHTML = "";
+
+  answers.forEach(a=>{
+    const btn = document.createElement("button");
+    btn.innerText = a;
+    btn.onclick = ()=>check(btn, a === correct);
+    box.appendChild(btn);
+  });
+}
+
+function check(btn, ok){
+  document.querySelectorAll("button").forEach(b=>b.disabled=true);
+  if(ok){ btn.classList.add("correct"); score++; }
+  else{
+    btn.classList.add("wrong");
+    [...document.querySelectorAll("button")]
+      .find(b=>b.innerText===QUESTIONS[index].word ||
+               b.innerText===QUESTIONS[index].definition)
+      ?.classList.add("correct");
+  }
+  setTimeout(()=>{ index++; loadQuestion(); }, 900);
+}
+
+loadQuestion();
+</script>
+</body>
+</html>
