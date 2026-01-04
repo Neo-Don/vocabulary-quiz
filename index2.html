@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vocabulary Quiz</title>
+<style>
+body { font-family:"Segoe UI",Arial,sans-serif; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; background-size:cover; background-position:center; transition: background 1s ease-in-out; }
+.quiz-container { background:#fff; padding:30px; border-radius:16px; box-shadow:0 10px 20px rgba(0,0,0,0.3); width:90%; max-width:700px; text-align:center; overflow:hidden;}
+.score { font-size:18px; margin-bottom:15px;}
+.question { font-size:22px; margin-bottom:20px; }
+.options button { padding:12px; border:2px solid #007bff; border-radius:10px; background:#fff; cursor:pointer; width:100%; margin:6px 0; font-size:18px; transition:.25s;}
+.options button:hover { background:#007bff; color:#fff;}
+.feedback { margin-top:15px; font-size:18px; transition: opacity 0.5s ease;}
+.new-word-form { margin-top:20px; display:flex; flex-direction:column; gap:10px; }
+.new-word-form input, .new-word-form button { padding:8px; font-size:16px; border-radius:6px; border:1px solid #ccc;}
+.new-word-form button { background:#28a745; color:#fff; border:none; cursor:pointer; transition:.3s;}
+.new-word-form button:hover { background:#218838; }
+</style>
+</head>
+<body>
+
+<div class="quiz-container" id="quizContainer">
+  <div class="score" id="score">Score: 0</div>
+  <div class="question" id="question">Loading...</div>
+  <div class="options" id="options"></div>
+  <div class="feedback" id="feedback"></div>
+
+  <div class="new-word-form">
+    <input type="text" id="newWord" placeholder="Enter new word"/>
+    <input type="text" id="newDef" placeholder="Optional definition"/>
+    <button id="addWordBtn">Add Word</button>
+  </div>
+</div>
+
+<script>
+// Full Word Bank
+let WORDS = [
+"Facetious","Deliberately","Unhurried","Flippant","Waggish","Patronize","Condescend","Superiority",
+"Supercilious","Haughty","Disdain","Gregarious","Misanthrope","Debacle","Ignominious","Fiasco",
+"Debauchery","Pleasure","Enjoyment","Gratification","Derivative","Banal","Originality","Novel",
+"Creatively","Creativity","Imaginative","Inventiveness","Mundane","Pragmatic","Feasible",
+"Debilitate","Infirm","Irresolute","Pedant","Pretentious","Bravado","Intimidate","Overawe",
+"Evocative","Maelstrom","Turmoil","Inexorable","Persuade","Entreaty","Anathema","Vehemently",
+"Turpitude","Deprave","Wickedness","Rambunctious","Exuberant","Profuse","Boisterous","Vitriol",
+"Cruel","Permutation","Pompous","Affectedly","Irritatingly","Solemn","Arrogant","Conceited",
+"Vain","Excessive","Immoderate","Apprehensive","Fearful","Fear","Anxiety","Unencumbered",
+"Impediment","Hindrance","Propagate","Promulgate","Proclamation","Double Entendre","Ambiguous",
+"Euphemism","Anthropocentric","Accoutrements","Adore","Respect","Deference","Worship","Venerate",
+"Revere","Admire","Impress","Affection","Affecting","Affected","Predilection","Precocious",
+"Proclivities","Inclination","Predisposition","Disposition","Menagerie","Captivity","Imprison",
+"Secular","Agog","Propensity","Behave","Adulterated","Coalesce","Sapiosexual","Emphatic","Forcibly",
+"Prominent","Protuberant","Diaspora","Dispersion","Disparity","Unfair","Esoteric","Modicum",
+"Rigorous","Enamored","Insidious","Treacherous","Cacophony","Discordant","Quarrel","Hubris",
+"Self-confidence","Opine","Lucrative","Precarious","Ubiquitous","Permeate","Pervade","Original",
+"Eccentric","Intelligible","Comprehensible","Ineffable","Onus","Onus Probandi","Fragility","Endearment",
+"Endear","Cataclysmic","Emphasize","Prominence","Protuberance","Protrudes","Vindictive","Amend",
+"Sate","Desire","Cryptic","Obscure","Dingy","Drab","Formidable","Impressively","Evoke","Elicit",
+"Incapacitate","Deprive","Depose","Nuanced","Conundrum","Prudent","Exacerbate","Exasperate","Poignant",
+"Pungent","Acrid","Fortuitous","Serendipitous","Inhibited","Redundant","Radical","Intrinsic","Wholly",
+"Intricate","Meticulous","Overt","Innocuous","Languid","Disinclined","Enthusiasm","Jarring",
+"Incongruous","Congruous","Coincide","Superimpose","Androgynous","Indeterminate","Arbitrary",
+"Autocratic","Domineer","Indiscriminate","Discriminate","Distinction","Vacuous","Effervescent",
+"Laborious","Fluent","Tumultuous","Disorderly","Sophisticated","Sophistry","Fallacy","Mistake",
+"Deceive","Avant Garde","Befuddle","Perplexed","Baffled","Bewilder","Complicate","Ethnocentric",
+"Embellish","Putrid","Emit","Fetid","Revulsion","Loathe","Disgust","Hatred","Repulsive","Distaste",
+"Aversion","Putrefaction","Dubious","Hesitate","Tentative","Provisional","Reluctant","Doubting",
+"Conviction","Skeptical","Frugal","Begrudge","Envy","Discontented","Unwilling","Resent","Indignant",
+"Cynical","Contempt","Scorn","Worthless","Despicable","Derision","Ridicule","Mock","Absurd","Amuse",
+"Illogical","Inept","Hyperbole","Exaggerate","Onomatopoeia","Love","Intuition","Conscious",
+"Perceptible","Reason","Sensible","Rational","Endow","Bequeath","Instinct","Innate","Intuitive",
+"Imbued","Inspire","Animate","Vigor","Unconscious","Logic","Codification","Infer","Deduce","Explicit",
+"Differ","Dissimilar","Different","Usual","Habit","Customarily","Statute","Custumal","Prefer",
+"Distinct","Distinguishable","Discern","Perceive"
+];
+
+let score = 0;
+let definitionCache = JSON.parse(localStorage.getItem("definitionCache")||"{}");
+let exampleCache = JSON.parse(localStorage.getItem("exampleCache")||"{}");
+
+const backgrounds = [
+  "https://source.unsplash.com/1600x900/?nature,sky",
+  "https://source.unsplash.com/1600x900/?books,library",
+  "https://source.unsplash.com/1600x900/?abstract,art",
+  "https://source.unsplash.com/1600x900/?technology,pattern",
+  "https://source.unsplash.com/1600x900/?space,stars",
+  "https://source.unsplash.com/1600x900/?ocean",
+  "https://source.unsplash.com/1600x900/?city,night",
+  "https://source.unsplash.com/1600x900/?forest",
+];
+
+function shuffle(arr){ return arr.sort(()=>Math.random()-0.5); }
+
+async function getDefinition(word){
+  if(definitionCache[word]) return definitionCache[word];
+  try{
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    const data = await res.json();
+    const def = data?.[0]?.meanings?.[0]?.definitions?.[0]?.definition || "Definition not found.";
+    definitionCache[word]=def;
+    localStorage.setItem("definitionCache", JSON.stringify(definitionCache));
+    return def;
+  }catch(e){ return "Definition not found."; }
+}
+
+async function getExampleSentence(word){
+  if(exampleCache[word]) return exampleCache[word];
+  try{
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    const data = await res.json();
+    if(data && data[0]?.meanings){
+      for(const meaning of data[0].meanings){
+        for(const def of meaning.definitions){
+          if(def.example){
+            exampleCache[word]=def.example;
+            localStorage.setItem("exampleCache", JSON.stringify(exampleCache));
+            return def.example;
+          }
+        }
+      }
+    }
+  }catch(e){}
+  const fallback = `This is a sentence with the word ${word}.`;
+  exampleCache[word]=fallback;
+  localStorage.setItem("exampleCache", JSON.stringify(exampleCache));
+  return fallback;
+}
+
+function changeTheme(){
+    const baseUrl = backgrounds[Math.floor(Math.random()*backgrounds.length)];
+    const newBg = `${baseUrl}&cb=${Date.now()}`;
+    const img = new Image();
+    img.src = newBg;
+    img.onload = ()=> document.body.style.backgroundImage = `url(${newBg})`;
+}
+
+async function generateQuestion(){
+  document.getElementById("feedback").style.opacity = 0;
+  const word = WORDS[Math.floor(Math.random()*WORDS.length)];
+  const definition = await getDefinition(word);
+
+  const modes = ["hidden","defToWord","wordToDef"];
+  const mode = modes[Math.floor(Math.random()*modes.length)];
+
+  let prompt, correct, choices;
+
+  if(mode==="hidden"){
+    const sentence = await getExampleSentence(word);
+    prompt = sentence.replace(new RegExp("\\b"+word+"\\b","i"), "[HIDDEN WORD]");
+    correct = word;
+    choices = shuffle([
+      correct,
+      WORDS[Math.floor(Math.random()*WORDS.length)],
+      WORDS[Math.floor(Math.random()*WORDS.length)],
+      WORDS[Math.floor(Math.random()*WORDS.length)]
+    ]);
+  } else if(mode==="defToWord"){
+    prompt = definition;
+    correct = word;
+    choices = shuffle([
+      correct,
+      WORDS[Math.floor(Math.random()*WORDS.length)],
+      WORDS[Math.floor(Math.random()*WORDS.length)],
+      WORDS[Math.floor(Math.random()*WORDS.length)]
+    ]);
+  } else {
+    prompt = word;
+    correct = definition;
+    choices = shuffle([
+      correct,
+      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)]),
+      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)]),
+      await getDefinition(WORDS[Math.floor(Math.random()*WORDS.length)])
+    ]);
+  }
+
+  document.getElementById("question").innerText = prompt;
+  const optsDiv = document.getElementById("options");
+  optsDiv.innerHTML = "";
+  choices.forEach(choice=>{
+    const btn = document.createElement("button");
+    btn.textContent = choice;
+    btn.onclick = ()=>checkAnswer(choice, correct);
+    optsDiv.appendChild(btn);
+  });
+
+  changeTheme();
+}
+
+function checkAnswer(choice, correct){
+  const feedback = document.getElementById("feedback");
+  if(choice===correct){
+    score++;
+    feedback.style.color="green";
+    feedback.innerText="Correct!";
+  } else {
+    feedback.style.color="red";
+    feedback.innerText=`Incorrect — correct: ${correct}`;
+  }
+  feedback.style.opacity = 1;
+  document.getElementById("score").innerText=`Score: ${score}`;
+  setTimeout(generateQuestion,1200);
+}
+
+document.getElementById("addWordBtn").addEventListener("click", async ()=>{
+  const newWord = document.getElementById("newWord").value.trim();
+  let newDef = document.getElementById("newDef").value.trim();
+  if(!newWord) return alert("Enter a word");
+  if(!WORDS.includes(newWord)) WORDS.push(newWord);
+  if(!newDef) newDef = await getDefinition(newWord);
+  definitionCache[newWord]=newDef;
+  localStorage.setItem("definitionCache", JSON.stringify(definitionCache));
+  alert(`Word "${newWord}" added successfully!`);
+  document.getElementById("newWord").value="";
+  document.getElementById("newDef").value="";
+});
+
+generateQuestion();
+</script>
+</body>
+</html>
