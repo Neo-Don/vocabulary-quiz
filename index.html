@@ -74,18 +74,10 @@ let WORDS = [
 "Distinct","Distinguishable","Discern","Perceive"
 ];
 
-// Pre-made sentences for hidden word mode (you can expand)
-let sentences = {
-  "Facetious": "He was being facetious when he joked about the serious matter.",
-  "Deliberately": "She deliberately avoided answering the question.",
-  "Unhurried": "He took an unhurried walk through the park.",
-  "Flippant": "His flippant remarks annoyed the teacher.",
-  "Waggish": "The comedian had a waggish sense of humor."
-  // Add more sentences for other words as needed
-};
-
 let score = 0;
 let definitionCache = JSON.parse(localStorage.getItem("definitionCache")||"{}");
+let exampleCache = JSON.parse(localStorage.getItem("exampleCache")||"{}");
+
 const backgrounds = [
   "https://source.unsplash.com/1600x900/?nature,sky",
   "https://source.unsplash.com/1600x900/?books,library",
@@ -111,11 +103,35 @@ async function getDefinition(word){
   }catch(e){ return "Definition not found."; }
 }
 
+async function getExampleSentence(word){
+  if(exampleCache[word]) return exampleCache[word];
+  try{
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    const data = await res.json();
+    if(data && data[0]?.meanings){
+      for(const meaning of data[0].meanings){
+        for(const def of meaning.definitions){
+          if(def.example){
+            exampleCache[word]=def.example;
+            localStorage.setItem("exampleCache", JSON.stringify(exampleCache));
+            return def.example;
+          }
+        }
+      }
+    }
+  }catch(e){}
+  // fallback sentence
+  const fallback = `This is a sentence with the word ${word}.`;
+  exampleCache[word]=fallback;
+  localStorage.setItem("exampleCache", JSON.stringify(exampleCache));
+  return fallback;
+}
+
 function changeTheme(){
   const newBg = backgrounds[Math.floor(Math.random()*backgrounds.length)];
   const img = new Image();
   img.src = newBg;
-  img.onload = () => document.body.style.backgroundImage = `url(${newBg})`;
+  img.onload = ()=> document.body.style.backgroundImage = `url(${newBg})`;
 }
 
 async function generateQuestion(){
@@ -129,8 +145,8 @@ async function generateQuestion(){
   let prompt, correct, choices;
 
   if(mode==="hidden"){
-    const sentence = sentences[word] || `This is a sentence with the word ${word}.`;
-    prompt = sentence.replace(word, "[HIDDEN WORD]");
+    const sentence = await getExampleSentence(word);
+    prompt = sentence.replace(new RegExp("\\b"+word+"\\b","i"), "[HIDDEN WORD]");
     correct = word;
     choices = shuffle([
       correct,
@@ -147,7 +163,7 @@ async function generateQuestion(){
       WORDS[Math.floor(Math.random()*WORDS.length)],
       WORDS[Math.floor(Math.random()*WORDS.length)]
     ]);
-  } else { // wordToDef
+  } else {
     prompt = word;
     correct = definition;
     choices = shuffle([
@@ -199,7 +215,6 @@ document.getElementById("addWordBtn").addEventListener("click", async ()=>{
   document.getElementById("newDef").value="";
 });
 
-// Start quiz
 generateQuestion();
 </script>
 </body>
